@@ -38,7 +38,6 @@ class GoogleAnalyticsMetricsHooks {
 				$wgGoogleAnalyticsMetricsAllowed ) ) {
 			return self::getWrappedError( 'The requested metric is forbidden.' );
 		}
-
 		return self::getMetric( $metric, $startDate, $endDate );
 	}
 
@@ -53,33 +52,54 @@ class GoogleAnalyticsMetricsHooks {
 	 * @return string
 	 */
 	public static function getMetric( $metric, $startDate, $endDate ) {
-		global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry;
-
+	    global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry, $wgTitle, $wgArticlePath;
 		// We store the ID in the cache, but that is not a waste, since if the ID changes that
 		// data is no longer valid.
-		$request = array( 'ga:' . $wgGoogleAnalyticsMetricsViewID, $startDate, $endDate, 'ga:' . $metric );
-
+		$responseMetricIndex = 0;
+		$responseMetricWiki = 0;
+		$title = $wgTitle->getFullText();
+		$request = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID, $startDate, $endDate, 'ga:' . $metric, array( 'dimensions' => 'ga:pagePath') );
 		$responseMetric = GoogleAnalyticsMetricsCache::getCache( $request );
-
 		if ( !$responseMetric ) {
 			$service = self::getService();
+
 			try {
 				$response = call_user_func_array( array( $service->data_ga, 'get' ), $request );
 				$rows = $response->getRows();
-				$responseMetric = $rows[0][0]; //Pull only the individual piece of data we're returning
+				foreach($rows as $row){
+				    // Search patterns and replace it with nothing to just have the title's page, do it with index pattern and wiki
+				    $patternIndex = '[^\/index.php\/]';
+				    $replace = '';
+				    $NewRowIndex= preg_replace($patternIndex, $replace, $row[0]);
+
+				    if($NewRowIndex==$title){
+                        $responseMetricIndex = $row[1];
+                    }
+                    //We get through $1 to get the title page and then we check if it's a match to display the true number.
+                    $patternWiki =  "#" .str_replace (('$1'), '(.*)', $wgArticlePath) . "#";
+                    preg_match($patternWiki, $row[0], $matches);
+                    if(isset($matches[1]) && $matches[1]== $title ) {
+   				        $responseMetricWiki = $row[1];
+                     }
+                    // We add both counter to display the sum and have the true one.
+                    $responseMetric = $responseMetricIndex + $responseMetricWiki;
+
+				}
+
+
 				GoogleAnalyticsMetricsCache::setCache( $request, $responseMetric,
 					$wgGoogleAnalyticsMetricsExpiry );
 			} catch ( Exception $e ) {
-				MWExceptionHandler::logException( $e );
-
+			    MWExceptionHandler::logException( $e );
 				// Try to at least return something, however old it is
-				$lastValue = GoogleAnalyticsMetricsCache::getCache( $request, true );
+ 				$lastValue = GoogleAnalyticsMetricsCache::getCache( $request, true );
 				if ( $lastValue ) {
 					return $lastValue;
 				} else {
-					return self::getWrappedError( 'Error!' );
+				    return self::getWrappedError( 'Error!' );
 				}
 			}
+
 		}
 
 
@@ -96,37 +116,42 @@ class GoogleAnalyticsMetricsHooks {
 	 */
 	private static function getService() {
 		//This entire function is copied from GoogleAnalyticsTopPages::getData()
-		global $wgGoogleAnalyticsMetricsEmail, $wgGoogleAnalyticsMetricsPath, $wgRequest;
+	    global $wgGoogleAnalyticsMetricsEmail,$wgGoogleAnalyticsMetricsDevelopersKey,
+	    $wgGoogleAnanlyticsMetricsAppName, $wgGoogleAnalyticsMetricsServiceAccountPath, $wgRequest;
 
-		// create a new Google_Client object
-		$client = new Google_Client();
-		// set app name
-		$client->setApplicationName( 'GoogleAnalyticsMetrics' );
+
+	    $client = new Google_Client();
+	    $client->setApplicationName($wgGoogleAnanlyticsMetricsAppName);
+
+	    $client->setAuthConfig($wgGoogleAnalyticsMetricsServiceAccountPath);
+	    $client->setDeveloperKey($wgGoogleAnalyticsMetricsDevelopersKey);
+
+        $client->setScopes(['https://www.googleapis.com/auth/analytics.readonly']);
+        $client->useApplicationDefaultCredentials();
+        $analytics = new Google_Service_Analytics($client);
 
 		$request = $wgRequest;
+
 		// check, if the client is already authenticated
 		if ( $request->getSessionData( 'service_token' ) !== null ) {
-			$client->setAccessToken( $request->getSessionData( 'service_token' ) );
+		    $client->setAccessToken( $request->getSessionData( 'service_token' ) );
 		}
+		$client->setAuthConfig($wgGoogleAnalyticsMetricsServiceAccountPath);
+		$client->useApplicationDefaultCredentials();
 
-		// load the certificate key file
-		$key = file_get_contents( $wgGoogleAnalyticsMetricsPath );
-		// create the service account credentials
-		$cred = new Google_Auth_AssertionCredentials(
-			$wgGoogleAnalyticsMetricsEmail, array( 'https://www.googleapis.com/auth/analytics.readonly' ),
-			$key
-		);
+
+
 		// set the credentials
-		$client->setAssertionCredentials( $cred );
-		if ( $client->getAuth()->isAccessTokenExpired() ) {
-			// authenticate the service account
-			$client->getAuth()->refreshTokenWithAssertion( $cred );
-		}
+		//$client->setAssertionCredentials( $cred );
+// 		if ( $client->getAuth()->isAccessTokenExpired() ) {
+// 			// authenticate the service account
+// 			$client->getAuth()->refreshTokenWithAssertion( $cred );
+// 		}
 		// set the service_token to the session for future requests
-		$request->setSessionData( 'service_token', $client->getAccessToken() );
+ 		$request->setSessionData( 'service_token', $client->getAccessToken() );
 
 		// Create the needed Google Analytics service object
-		return new Google_Service_Analytics( $client );
+		return $analytics;
 	}
 
 	/**
