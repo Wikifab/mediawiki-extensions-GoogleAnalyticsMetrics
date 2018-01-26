@@ -14,7 +14,7 @@ We need to display the counter view per page.
 
 3. Add those lines too to your LocalSettings.php file with your own values : 
 
-	$wgGoogleAnalyticsMetricsAllowed ='*';
+	$wgGoogleAnalyticsMetricsAllowed ='*'; // the "*" allow all metrics 
 	$wgGoogleAnalyticsMetricsServiceAccountPath ='Your/Path/To/YourJsonFileName.json';
 	$wgGoogleAnalyticsMetricsEmail='your client_email in your json file';
 	$wgGoogleAnalyticsMetricsViewID = 'This is your account's id you can find directly on Google Analytics in your settings.';

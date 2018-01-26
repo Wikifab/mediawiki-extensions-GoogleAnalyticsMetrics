@@ -140,13 +140,6 @@ class GoogleAnalyticsMetricsHooks {
 		$client->useApplicationDefaultCredentials();
 
 
-
-		// set the credentials
-		//$client->setAssertionCredentials( $cred );
-// 		if ( $client->getAuth()->isAccessTokenExpired() ) {
-// 			// authenticate the service account
-// 			$client->getAuth()->refreshTokenWithAssertion( $cred );
-// 		}
 		// set the service_token to the session for future requests
  		$request->setSessionData( 'service_token', $client->getAccessToken() );
 
