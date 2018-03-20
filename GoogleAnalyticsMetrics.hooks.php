@@ -122,7 +122,6 @@ class GoogleAnalyticsMetricsHooks {
 
 	    $client = new Google_Client();
 	    $client->setApplicationName($wgGoogleAnanlyticsMetricsAppName);
-	    var_dump($wgGoogleAnalyticsMetricsServiceAccountPath);
 	    $client->setAuthConfig($wgGoogleAnalyticsMetricsServiceAccountPath);
 	    $client->setDeveloperKey($wgGoogleAnalyticsMetricsDevelopersKey);
 
