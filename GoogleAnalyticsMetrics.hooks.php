@@ -91,7 +91,6 @@ class GoogleAnalyticsMetricsHooks {
 					$wgGoogleAnalyticsMetricsExpiry );
 			} catch ( Exception $e ) {
 			    MWExceptionHandler::logException( $e );
-			    var_dump($e);
 				// Try to at least return something, however old it is
  				$lastValue = GoogleAnalyticsMetricsCache::getCache( $request, true );
 				if ( $lastValue ) {
