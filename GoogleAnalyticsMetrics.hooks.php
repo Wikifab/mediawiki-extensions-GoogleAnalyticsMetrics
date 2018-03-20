@@ -57,7 +57,7 @@ class GoogleAnalyticsMetricsHooks {
 		// data is no longer valid.
 		$responseMetricIndex = 0;
 		$responseMetricWiki = 0;
-		$title = $wgTitle->getFullText();
+		$title = $wgTitle->getDBKey();
 		$request = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID, $startDate, $endDate, 'ga:' . $metric, array( 'dimensions' => 'ga:pagePath') );
 		$responseMetric = GoogleAnalyticsMetricsCache::getCache( $request );
 		if ( !$responseMetric ) {
@@ -91,6 +91,7 @@ class GoogleAnalyticsMetricsHooks {
 					$wgGoogleAnalyticsMetricsExpiry );
 			} catch ( Exception $e ) {
 			    MWExceptionHandler::logException( $e );
+			    var_dump($e);
 				// Try to at least return something, however old it is
  				$lastValue = GoogleAnalyticsMetricsCache::getCache( $request, true );
 				if ( $lastValue ) {
@@ -122,7 +123,7 @@ class GoogleAnalyticsMetricsHooks {
 
 	    $client = new Google_Client();
 	    $client->setApplicationName($wgGoogleAnanlyticsMetricsAppName);
-
+	    var_dump($wgGoogleAnalyticsMetricsServiceAccountPath);
 	    $client->setAuthConfig($wgGoogleAnalyticsMetricsServiceAccountPath);
 	    $client->setDeveloperKey($wgGoogleAnalyticsMetricsDevelopersKey);
 
