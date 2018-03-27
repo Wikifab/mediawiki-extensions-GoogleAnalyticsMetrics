@@ -41,23 +41,14 @@ class GoogleAnalyticsMetricsHooks {
 		return self::getMetric( $metric, $startDate, $endDate );
 	}
 
-	/**
-	 * Gets the Analytics metric with the dates provided
-	 *
-	 * @global string $wgGoogleAnalyticsMetricsViewID
-	 * @global int $wgGoogleAnalyticsMetricsExpiry
-	 * @param string $metric The name of the Analyitcs metric, without the "ga:" prefix
-	 * @param string $startDate Must be a valid date recognized by the Google API
-	 * @param string $endDate Must be a valid date recognized by the Google API
-	 * @return string
-	 */
-	public static function getMetric( $metric, $startDate, $endDate ) {
-	    global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry, $wgTitle, $wgArticlePath;
+	public static function getMetricWithTitle( $title, $metric, $startDate, $endDate ) {
+
+		global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry, $wgArticlePath;
 		// We store the ID in the cache, but that is not a waste, since if the ID changes that
 		// data is no longer valid.
 		$responseMetricIndex = 0;
 		$responseMetricWiki = 0;
-		$title = $wgTitle->getDBKey();
+		$title = $title->getDBKey();
 		$request = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID, $startDate, $endDate, 'ga:' . $metric, array( 'dimensions' => 'ga:pagePath') );
 		$responseMetric = GoogleAnalyticsMetricsCache::getCache( $request );
 		if ( !$responseMetric ) {
@@ -104,6 +95,25 @@ class GoogleAnalyticsMetricsHooks {
 
 
 		return $responseMetric;
+	}
+
+
+	/**
+	 * Gets the Analytics metric with the dates provided
+	 *
+	 * @global string $wgGoogleAnalyticsMetricsViewID
+	 * @global int $wgGoogleAnalyticsMetricsExpiry
+	 * @param string $metric The name of the Analyitcs metric, without the "ga:" prefix
+	 * @param string $startDate Must be a valid date recognized by the Google API
+	 * @param string $endDate Must be a valid date recognized by the Google API
+	 * @return string
+	 */
+	public static function getMetric( $metric, $startDate, $endDate ) {
+	    global $wgTitle;
+		// We store the ID in the cache, but that is not a waste, since if the ID changes that
+		// data is no longer valid.
+	    return self::getMetricWithTitle( $wgTitle, $metric, $startDate, $endDate);
+
 	}
 
 	/**
