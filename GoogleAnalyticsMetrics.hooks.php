@@ -43,13 +43,33 @@ class GoogleAnalyticsMetricsHooks {
 
 	public static function getMetricWithTitle( $title, $metric, $startDate, $endDate ) {
 
-		global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry, $wgArticlePath;
+		global $wgGoogleAnalyticsMetricsViewID, $wgGoogleAnalyticsMetricsExpiry, $wgArticlePath, $wgScriptPath;
 		// We store the ID in the cache, but that is not a waste, since if the ID changes that
 		// data is no longer valid.
 		$responseMetricIndex = 0;
 		$responseMetricWiki = 0;
 		$title = $title->getDBKey();
-		$request = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID, $startDate, $endDate, 'ga:' . $metric, array( 'dimensions' => 'ga:pagePath') );
+		$path1 = $wgArticlePath ? str_replace('$1', $title, $wgArticlePath) : '/wiki/' . $title;
+		$path2 = $wgScriptPath . '/index.php/' . $title;
+		$request = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID,
+				$startDate,
+				$endDate,
+				'ga:' . $metric,
+				array(
+						'dimensions' => 'ga:pagePath',
+						'filters' => 'ga:pagePath==' .$path1
+
+				) );
+		$request2 = array( 'ga:'.$wgGoogleAnalyticsMetricsViewID,
+				$startDate,
+				$endDate,
+				'ga:' . $metric,
+				array(
+						'dimensions' => 'ga:pagePath',
+						'filters' => 'ga:pagePath=='. $path2
+
+				) );
+
 		$responseMetric = GoogleAnalyticsMetricsCache::getCache( $request );
 		if ( !$responseMetric ) {
 			$service = self::getService();
@@ -57,7 +77,13 @@ class GoogleAnalyticsMetricsHooks {
 			try {
 				$response = call_user_func_array( array( $service->data_ga, 'get' ), $request );
 				$rows = $response->getRows();
+				$response2 = call_user_func_array( array( $service->data_ga, 'get' ), $request2 );
+				$rows2 = $response2->getRows();
+				$rows = is_array($rows) ? $rows : [];
+				$rows2 = is_array($rows2) ? $rows2 : [];
+				$rows = array_merge($rows,$rows2);
 				foreach($rows as $row){
+					// as we are using filters in queries, all rows could be counted, we could remove the fellowing checks
 				    // Search patterns and replace it with nothing to just have the title's page, do it with index pattern and wiki
 				    $patternIndex = '[^\/index.php\/]';
 				    $replace = '';
