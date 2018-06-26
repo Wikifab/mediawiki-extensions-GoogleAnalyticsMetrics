@@ -48,6 +48,9 @@ class GoogleAnalyticsMetricsHooks {
 		// data is no longer valid.
 		$responseMetricIndex = 0;
 		$responseMetricWiki = 0;
+		if (! $title) {
+			return null;
+		}
 		$title = $title->getDBKey();
 		$path1 = $wgArticlePath ? str_replace('$1', $title, $wgArticlePath) : '/wiki/' . $title;
 		$path2 = $wgScriptPath . '/index.php/' . $title;
